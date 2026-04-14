@@ -1,0 +1,19 @@
+name: rinalmo
+channels:
+  - conda-forge
+  - bioconda
+  - pytorch
+dependencies:
+  - pytorch
+  - python
+  - pip
+  - pandas
+  - tqdm
+  - click
+  - scikit-learn
+  - ipykernel
+  - einops
+  - pip:
+      - gdown
+      - ml_collections
+prefix: /Users/darveshgorhe/miniforge3/envs/rinalmo

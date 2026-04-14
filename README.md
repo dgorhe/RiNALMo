@@ -20,29 +20,53 @@ Ribonucleic acid (RNA) plays a variety of crucial roles in fundamental biologica
  <img src="./imgs/rinalmo_3.png" width="1000">
 
 ## Quick Start - Inference
-Use following commands for the installation (Prerequisites: ```Python>=3.8``` and ```CUDA>=11.8```):
+
+**Device selection:** inference code picks an accelerator in this order: **CUDA** (NVIDIA GPU), then **MPS** (Apple GPU / Metal), then **CPU**. This is implemented in `rinalmo.inference_device.select_inference_device()` and used by `get_pretrained_model()` when you do not pass a device.
+
+### macOS
+
+Prerequisites: [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Mambaforge](https://github.com/conda-forge/miniforge), Python ≥ 3.8.1 via the env file (matches `requires-python` in [`pyproject.toml`](./pyproject.toml)).
+
+```bash
+git clone https://github.com/lbcb-sci/RiNALMo
+cd RiNALMo
+conda env create -f environment.macos.yml
+conda activate rinalmo
+pip install -e .
+python test.py
+```
+
+`test.py` runs a short forward pass using the automatically chosen device. On first run, pretrained weights for `giga-v1` are downloaded (via `gdown`) into `~/.cache/rinalmo_pretrained/` if they are not already present.
+
+### Linux (CUDA)
+
+For a minimal pip install (Prerequisites: **Python ≥ 3.8.1**, **CUDA ≥ 11.8** compatible with your PyTorch build):
+
 ```bash
 git clone https://github.com/lbcb-sci/RiNALMo
 cd RiNALMo
 pip install .
 pip install flash-attn==2.3.2
+python test.py
 ```
 
-After installation you can easily use RiNALMo to obtain nucleotide representations:
+FlashAttention is used on CUDA; on CPU or MPS the model falls back to standard attention. For a conda environment oriented toward CUDA and training dependencies, use `environment.linux.yml` (see comments at the top of that file).
+
+After installation you can use RiNALMo from Python; this matches what `test.py` does:
+
 ```python
 import torch
 from rinalmo.pretrained import get_pretrained_model
+from rinalmo.inference_device import select_inference_device, inference_autocast
 
-DEVICE = "cuda:0"
-
-model, alphabet = get_pretrained_model(model_name="giga-v1")
-model = model.to(device=DEVICE)
+DEVICE = select_inference_device()
+model, alphabet = get_pretrained_model(model_name="giga-v1", device=DEVICE)
 model.eval()
 seqs = ["ACUUUGGCCA", "CCCGGU"]
 
 tokens = torch.tensor(alphabet.batch_tokenize(seqs), dtype=torch.int64, device=DEVICE)
-with torch.no_grad(), torch.cuda.amp.autocast():
-  outputs = model(tokens)
+with torch.no_grad(), inference_autocast(DEVICE):
+    outputs = model(tokens)
 
 print(outputs["representation"])
 ```
@@ -53,14 +77,26 @@ print(outputs["representation"])
 git clone https://github.com/lbcb-sci/RiNALMo
 cd RiNALMo
 ```
-2. Create conda environment. All external dependencies should be contained in ```environment.yml```.
-```bash
-# create conda environment for RiNALMo
-conda env create -f environment.yml
+2. Create a conda environment (choose one file for your OS):
 
-# activate RiNALMo environment
+**macOS** — dependencies for Apple Silicon / CPU inference and development:
+
+```bash
+conda env create -f environment.macos.yml
 conda activate rinalmo
+pip install -e .
 ```
+
+**Linux** — CUDA-oriented stack (see `environment.linux.yml` for scope and any caveats):
+
+```bash
+conda env create -f environment.linux.yml
+conda activate rinalmo
+pip install -e .
+```
+
+For quick inference with `test.py` or `get_pretrained_model`, you can skip steps 3–4: base weights are downloaded on demand to `~/.cache/rinalmo_pretrained/`. Download into `./weights/` when using the training/evaluation scripts below.
+
 3. Download pre-trained weights.
 ```bash
 mkdir weights
@@ -96,6 +132,18 @@ wget https://zenodo.org/records/15043668/files/rinalmo_giga_ncrna_class_200_nois
 
 cd ..
 ```
+
+## Development
+
+Optional extras in [`pyproject.toml`](./pyproject.toml) (`[project.optional-dependencies]` → `dev`) install **autopep8** and **flake8**. Use them after an editable install of the package:
+
+```bash
+pip install -e ".[dev]"
+```
+
+That selects the PEP 621 `dev` extra (see `Provides-Extra` / `Requires-Dist` … `extra == "dev"` on the built wheel). If you use **uv** with the repo lockfile, run `uv sync --extra dev` for the same packages.
+
+Autopep8 options live under `[tool.autopep8]` in the same file.
 
 ## Usage
 We provide pre-trained RiNALMo weights and fine-tuned weights for three downstream tasks: mean ribosome loading prediction, secondary structure prediction and splice-site prediction.

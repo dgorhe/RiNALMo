@@ -7,6 +7,7 @@ name = "rinalmo"
 version = "1.0.0"
 dependencies = [
     "torch>=2.0.0",
+    "einops>=0.7.0",
     "numpy>=1.23.5",
     "ml_collections>=0.1.1",
     "packaging>=23.2",
@@ -20,7 +21,7 @@ authors = [
   {name="Mile Šikić", email="mile_sikic@gis.a-star.edu.sg"},
 ]
 description = "RiboNucleic Acid Language Model."
-requires-python = ">=3.8"
+requires-python = ">=3.8.1"
 keywords = ["RNA", "Biology", "Deep Learning", "LLM"]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -31,9 +32,27 @@ classifiers = [
 license = {file = "LICENSE"}
 readme = "README.md"
 
+[project.optional-dependencies]
+dev = [
+    "autopep8>=2.0",
+    "flake8>=6.0",
+]
+
 [tool.setuptools]
 packages = ["rinalmo", "rinalmo.data", "rinalmo.model"]
 include-package-data = true
 
 [tool.setuptools.package-data]
 'rinalmo' = ['resources/*.json']
+
+[tool.pylsp]
+plugins.autopep8.enabled = true
+plugins.autopep8.max_line_length = 120
+
+[tool.autopep8]
+max_line_length = 120
+aggressive = 3
+# Use all usual autopep8 formatting rules
+
+[tool.mypy]
+check_untyped_defs = true

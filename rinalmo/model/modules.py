@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from rinalmo.model.attention import MultiHeadSelfAttention, FlashMultiHeadSelfAttention
+from rinalmo.model.attention import MultiHeadSelfAttention
 
 import torch.utils.checkpoint as checkpoint
 
@@ -103,6 +103,7 @@ class TransformerBlock(nn.Module):
         self.use_flash_attn = use_flash_attn
 
         if use_flash_attn:
+            from rinalmo.model.attention_flash import FlashMultiHeadSelfAttention
             self.mh_attn = FlashMultiHeadSelfAttention(embed_dim, num_heads, attention_dropout, causal=False, use_rot_emb=use_rot_emb, bias=attn_qkv_bias)
         else:
             self.mh_attn = MultiHeadSelfAttention(embed_dim, num_heads, attention_dropout, use_rot_emb, attn_qkv_bias)
